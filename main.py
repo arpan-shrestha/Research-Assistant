@@ -45,6 +45,10 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_ollama import OllamaLLM
 import os
 
+
+
+USE_MOCK_LLM = os.getenv("MOCK_MODE") == "true"
+
 app = FastAPI()
 
 CHROMA_PATH = './chroma_db'
@@ -97,9 +101,11 @@ def ask_question(request: QueryRequest):
         context=context,
         question=request.question
     )
-    
-    model = OllamaLLM(model="mistral")
-    answer = model.invoke(prompt)
+    if USE_MOCK_LLM:
+        answer = "This is a mock response for testing"
+    else:
+        model = OllamaLLM(model="mistral")
+        answer = model.invoke(prompt)
 
     # Save this interaction to memory
     memory.save_context({"question": request.question}, {"answer": answer})

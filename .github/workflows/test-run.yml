@@ -1,0 +1,33 @@
+name: Test RAG System
+
+on: [push, pull_request]
+
+jobs:
+  test-rag:
+    runs-on: ubuntu-latest
+
+    env:
+      MOCK_MODE: true  # ✅ This tells your app to skip Ollama in CI
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run FastAPI app (health check only)
+      run: |
+        python -m uvicorn main:app --host 127.0.0.1 --port 8000 --lifespan on --timeout-keep-alive 1 &
+        sleep 5
+        curl -f http://127.0.0.1:8000/docs
+
+
+    

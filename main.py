@@ -126,3 +126,8 @@ def ask_question(request: QueryRequest):
 def ingest():
     update_chroma()
     return {"message": "Chroma DB updated with new documents."}
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+

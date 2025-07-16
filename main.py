@@ -16,10 +16,18 @@ app = FastAPI()
 CHROMA_PATH = './chroma_db'
 
 # Run once on startup
+# if not os.path.exists(CHROMA_PATH):
+#     docs = load_and_split_documents()
+#     setup_chroma(docs)
+# db = load_chroma()
 if not os.path.exists(CHROMA_PATH):
-    docs = load_and_split_documents()
-    setup_chroma(docs)
-db = load_chroma()
+    if USE_MOCK_LLM:
+        print("MOCK_MODE: skipping Chroma setup")
+        db = None
+    else:
+        docs = load_and_split_documents()
+        setup_chroma(docs)
+
 
 # Store memory per session in a simple dict {session_id: memory_obj}
 memory_store = {}

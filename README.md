@@ -42,7 +42,7 @@ pip install -r requirements.txt
 ```bash
 ollama run mistral
 ```
-Make sure that **Ollama** is installed and **Mistral** is pulled
+- Make sure that Ollama is installed and Mistral is pulled
 ---
 ### 3. Start the API server
 ```bash
@@ -72,3 +72,4 @@ curl -X POST http://localhost:8000/ask \
 
 ### System Architecture 
 <img width="241" height="913" alt="Image" src="https://github.com/user-attachments/assets/c6f4096a-f67c-41ec-a50d-4ce263b252eb" />
+---

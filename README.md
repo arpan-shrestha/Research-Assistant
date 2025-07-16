@@ -71,4 +71,4 @@ curl -X POST http://localhost:8000/ask \
 ---
 
 ### System Architecture 
-<img width="214" height="835" alt="Image" src="https://github.com/user-attachments/assets/b32efecd-d1c5-4b31-8251-49fc25bde15c" />
+<img width="241" height="913" alt="Image" src="https://github.com/user-attachments/assets/c6f4096a-f67c-41ec-a50d-4ce263b252eb" />

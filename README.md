@@ -74,3 +74,7 @@ curl -X POST http://localhost:8000/ask \
 <img width="241" height="913" alt="Image" src="https://github.com/user-attachments/assets/c6f4096a-f67c-41ec-a50d-4ce263b252eb" />
 
 ---
+
+### Video Link
+https://drive.google.com/file/d/1KX12NqXU4zWtoibPLnS8PstunTGxydoM/view?usp=sharing
+---

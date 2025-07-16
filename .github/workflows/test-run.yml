@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      MOCK_MODE: true  # ✅ This tells your app to skip Ollama in CI
+      MOCK_MODE: true  
 
     steps:
     - name: Checkout code

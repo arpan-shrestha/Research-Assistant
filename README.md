@@ -18,8 +18,6 @@ A lightweight AI-powered research assistant that performs **retrieval-augmented 
 ├── chroma_db/ # Persisted local vector store (auto-created)
 ├── rag_pipeline.py # Core RAG logic, embeddings, memory, prompt
 ├── main.py # FastAPI app with /ask and /ingest endpoints
-├── tests/
-│ └── test_rag.py 
 ├── requirements.txt # All dependencies
 ├── architecture.png 
 └── README.md 

@@ -27,7 +27,7 @@ jobs:
       run: |
         python -m uvicorn main:app --host 127.0.0.1 --port 8000 --lifespan on --timeout-keep-alive 1 &
         sleep 5
-        curl -f http://127.0.0.1:8000/docs
+        curl -f http://127.0.0.1:8000/health
 
 
     

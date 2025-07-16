@@ -25,7 +25,7 @@ jobs:
 
     - name: Run FastAPI app (health check only)
       run: |
-        python -m uvicorn main:app --host 127.0.0.1 --port 8000 --lifespan on --timeout-keep-alive 1 &
+        python -m uvicorn main:app --host 127.0.0.1 --port 8000 --lifespan on --timeout-keep-alive 1 --log-level debug
         sleep 5
         curl -f http://127.0.0.1:8000/health
 

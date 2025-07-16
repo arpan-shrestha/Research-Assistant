@@ -26,9 +26,15 @@ def load_and_split_documents():
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=80)
     return splitter.split_documents(documents)
 
-def setup_chroma(chunks):
+# def setup_chroma(chunks):
+#     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=get_embedding_function())
+#     db.add_documents(chunks)
+#     return db
+def setup_chroma(chunks, batch_size=5000):
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=get_embedding_function())
-    db.add_documents(chunks)
+    for i in range(0, len(chunks), batch_size):
+        batch = chunks[i:i + batch_size]
+        db.add_documents(batch)
     return db
 
 def load_chroma():

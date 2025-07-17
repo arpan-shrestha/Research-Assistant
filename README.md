@@ -28,7 +28,7 @@ A lightweight AI-powered research assistant that performs **retrieval-augmented 
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/yourusername/rag-research-assistant.git
+git clone https://github.com/arpan-shrestha/Research-Assistant.git
 cd rag-research-assistant
 python -m venv env && source env/bin/activate
 pip install -r requirements.txt

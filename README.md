@@ -4,13 +4,11 @@ A lightweight AI-powered research assistant that performs **retrieval-augmented 
 ---
 ## 🚀 Features
 
-- 📄 Ingest `.pdf` documents into a **Chroma** vector database
-- 🔍 Fast **semantic search** using locally generated embeddings
-- 🤖 Natural-language Q&A using **Mistral 7B** (via Ollama)
-- 🧠 Short-term **session memory** for follow-up questions
-- ⚡ REST API with `/ask` and `/ingest` endpoints via **FastAPI**
-- 🧪 Unit tested with `pytest`
-- 📦 CI-ready with **GitHub Actions**
+- Ingest `.pdf` documents into a **Chroma** vector database
+- Fast **semantic search** using locally generated embeddings
+- Natural-language Q&A using **Mistral 7B** (via Ollama)
+- Short-term **session memory** for follow-up questions
+- REST API with `/ask` and `/ingest` endpoints via **FastAPI**
 ---
 ## 📂 Project Structure
 ``` 

@@ -2,7 +2,7 @@
 
 A lightweight AI-powered research assistant that performs **retrieval-augmented generation (RAG)** over local documents using open-source tools. Ask natural language questions and get grounded answers with source references — all running **offline on a laptop**.
 ---
-## 🚀 Features
+## Features
 
 - Ingest `.pdf` documents into a **Chroma** vector database
 - Fast **semantic search** using locally generated embeddings

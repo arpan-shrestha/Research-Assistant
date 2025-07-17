@@ -6,5 +6,3 @@ langchain_ollama
 pypdf
 pytest
 numpy
-uvicron
-requests

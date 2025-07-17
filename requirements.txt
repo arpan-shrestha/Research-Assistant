@@ -5,3 +5,6 @@ langchain_chroma
 langchain_ollama
 pypdf
 pytest
+numpy
+uvicron
+requests

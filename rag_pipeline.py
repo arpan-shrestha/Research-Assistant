@@ -46,6 +46,11 @@ def query_chroma(db, question, k=5):
 def generate_answer(chunks, question):
     context = "\n\n---\n\n".join([doc.page_content for doc in chunks])
     prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE).format(context=context, question=question)
-    model = OllamaLLM(model="mistral")
-    return model.invoke(prompt)
+    if os.getenv("MOCK_MODE") == "true":
+        return "This is a mock response for testing purposes."
+    else:
+        model = OllamaLLM(model="mistral")
+        return model.invoke(prompt)
+
+
 

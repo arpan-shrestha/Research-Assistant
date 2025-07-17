@@ -10,7 +10,7 @@ A lightweight AI-powered research assistant that performs **retrieval-augmented 
 - Short-term **session memory** for follow-up questions
 - REST API with `/ask` and `/ingest` endpoints via **FastAPI**
 ---
-## 📂 Project Structure
+## Project Structure
 ``` 
 ├── sample_docs/ # Folder for demo documents (.pdf)
 ├── chroma_db/ # Persisted local vector store (auto-created)

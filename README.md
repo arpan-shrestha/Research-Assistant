@@ -36,7 +36,7 @@ pip install -r requirements.txt
 ---
 ### 2. Start Ollama with Mistral
 ```bash
-ollama run mistral
+ollama serve
 ```
 - Make sure that Ollama is installed and Mistral is pulled
 ---

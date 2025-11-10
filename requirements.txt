@@ -1,8 +1,0 @@
-fastapi
-langchain
-langchain_community
-langchain_chroma
-langchain_ollama
-pypdf
-pytest
-numpy

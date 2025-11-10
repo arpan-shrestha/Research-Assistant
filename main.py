@@ -6,6 +6,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.prompts import ChatPromptTemplate
 from langchain_ollama import OllamaLLM
 import os
+import asyncio
 
 
 
@@ -14,6 +15,9 @@ USE_MOCK_LLM = os.getenv("MOCK_MODE") == "true"
 app = FastAPI()
 
 CHROMA_PATH = './chroma_db'
+
+# Initialize LLM once on startup (reused across all requests)
+llm_model = None
 
 # Run once on startup
 # if not os.path.exists(CHROMA_PATH):
@@ -32,12 +36,19 @@ if not os.path.exists(CHROMA_PATH):
 # Store memory per session in a simple dict {session_id: memory_obj}
 memory_store = {}
 
+# Initialize LLM on startup
+@app.on_event("startup")
+async def startup_event():
+    global llm_model
+    if not USE_MOCK_LLM:
+        llm_model = OllamaLLM(model="mistral")
+
 class QueryRequest(BaseModel):
     question: str
     session_id: str = None  # Add optional session_id
 
 @app.post("/ask")
-def ask_question(request: QueryRequest):
+async def ask_question(request: QueryRequest):
     # Use session_id or generate dummy one if none provided
     session_id = request.session_id or "default_session"
     
@@ -46,8 +57,8 @@ def ask_question(request: QueryRequest):
         memory_store[session_id] = ConversationBufferMemory(memory_key="chat_history")
     memory = memory_store[session_id]
 
-    # Query chroma for relevant docs
-    chunks = query_chroma(db, request.question)
+    # Query chroma for relevant docs (run in thread pool to avoid blocking)
+    chunks = await asyncio.to_thread(query_chroma, db, request.question)
     context = "\n\n---\n\n".join([doc.page_content for doc in chunks])
 
     # Build prompt with context, question, and conversation history
@@ -71,11 +82,15 @@ def ask_question(request: QueryRequest):
         context=context,
         question=request.question
     )
+    
+    # Use async execution for LLM call to avoid blocking
     if USE_MOCK_LLM:
         answer = "This is a mock response for testing"
     else:
-        model = OllamaLLM(model="mistral")
-        answer = model.invoke(prompt)
+        if llm_model is None:
+            raise RuntimeError("LLM model not initialized. Please check Ollama is running.")
+        # Run LLM invoke in thread pool to avoid blocking the event loop
+        answer = await asyncio.to_thread(llm_model.invoke, prompt)
 
     # Save this interaction to memory
     memory.save_context({"question": request.question}, {"answer": answer})
@@ -93,11 +108,17 @@ def ask_question(request: QueryRequest):
     }
 
 @app.post("/ingest")
-def ingest():
-    update_chroma()
+async def ingest():
+    # Run ingestion in thread pool to avoid blocking
+    await asyncio.to_thread(update_chroma)
     return {"message": "Chroma DB updated with new documents."}
 
 @app.get("/health")
+<<<<<<< HEAD
 def health_check():
     return {"status": "ok"}
 
+=======
+def health():
+    return("Status 200")
+>>>>>>> 4301fef (requirements.txt)

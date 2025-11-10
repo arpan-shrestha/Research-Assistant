@@ -5,13 +5,29 @@ from langchain.schema.document import Document
 from langchain_chroma import Chroma
 from get_embedding_function import get_embedding_function
 import os
+import pandas as pd
 
 Chroma_Path = './chroma_db'
 Data_Path = 'sample_docs'
 
-def load_docs():
+def load_pdf():
     loader = PyPDFDirectoryLoader(Data_Path)
     return loader.load()
+
+def load_csv():
+    csv_docs=[]
+    for file in os.listdir(Data_Path):
+        if file.endswith('.csv'):
+            df = pd.read_csv(os.path.join(Data_Path, file))
+            for _, row in df.iterrows():
+                text = " ".join(str(x) for x in row.values)
+                csv_docs.append(Document(page_content=text, metadata={"source": file}))
+    return csv_docs
+
+def load_docs():
+    pdf_docs = load_pdf()
+    csv_docs = load_csv()
+    return pdf_docs + csv_docs
 
 def split_docs(docs: list[Document]):
     splitter = RecursiveCharacterTextSplitter(

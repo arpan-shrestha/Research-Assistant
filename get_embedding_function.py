@@ -20,9 +20,19 @@ class MockEmbeddings(Embeddings):
         # Return random embedding for testing
         return np.random.rand(384).tolist()
 
+# Cache the embedding function to avoid recreating it
+_embedding_function = None
+
 def get_embedding_function():
+<<<<<<< HEAD
     if os.getenv("MOCK_MODE") == "true":
         return MockEmbeddings()
     else:
         embedding = OllamaEmbeddings(model="nomic-embed-text")
         return embedding
+=======
+    global _embedding_function
+    if _embedding_function is None:
+        _embedding_function = OllamaEmbeddings(model="nomic-embed-text")
+    return _embedding_function
+>>>>>>> 4301fef (requirements.txt)

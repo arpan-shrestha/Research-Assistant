@@ -11,17 +11,40 @@ Chroma_Path = './chroma_db'
 Data_Path = 'sample_docs'
 
 def load_pdf():
-    loader = PyPDFDirectoryLoader(Data_Path)
-    return loader.load()
+    """Load PDF files from directory"""
+    try:
+        loader = PyPDFDirectoryLoader(Data_Path)
+        docs = loader.load()
+        print(f"Loaded {len(docs)} PDF documents")
+        return docs
+    except Exception as e:
+        print(f"Error loading PDF files: {e}")
+        raise
 
 def load_csv():
-    csv_docs=[]
-    for file in os.listdir(Data_Path):
-        if file.endswith('.csv'):
-            df = pd.read_csv(os.path.join(Data_Path, file))
-            for _, row in df.iterrows():
-                text = " ".join(str(x) for x in row.values)
-                csv_docs.append(Document(page_content=text, metadata={"source": file}))
+    """Load CSV files and convert to documents - optimized with vectorized operations"""
+    csv_docs = []
+    try:
+        for file in os.listdir(Data_Path):
+            if file.endswith('.csv'):
+                file_path = os.path.join(Data_Path, file)
+                try:
+                    df = pd.read_csv(file_path)
+                    # Use vectorized operations instead of iterrows (much faster)
+                    # Convert all rows to strings at once
+                    df_str = df.astype(str)
+                    # Join all columns for each row
+                    texts = df_str.apply(lambda row: " ".join(row.values), axis=1)
+                    # Create documents in batch
+                    for text in texts:
+                        csv_docs.append(Document(page_content=text, metadata={"source": file}))
+                    print(f"Loaded {len(texts)} rows from {file}")
+                except Exception as e:
+                    print(f"Error loading CSV file {file}: {e}")
+                    continue
+    except Exception as e:
+        print(f"Error accessing data directory: {e}")
+        raise
     return csv_docs
 
 def load_docs():
@@ -38,18 +61,36 @@ def split_docs(docs: list[Document]):
     return splitter.split_documents(docs)
 
 def update_chroma():
-    print("Loading new documents...")
-    docs = load_docs()
-    chunks = split_docs(docs)
+    """Update Chroma DB with new documents - with error handling"""
+    try:
+        print("Loading new documents...")
+        docs = load_docs()
+        if not docs:
+            print("Warning: No documents found to ingest")
+            return
+        
+        print(f"Splitting {len(docs)} documents into chunks...")
+        chunks = split_docs(docs)
+        print(f"Created {len(chunks)} chunks")
 
-    print("Updating Chroma DB...")
-    db = Chroma(
-        persist_directory=Chroma_Path,
-        embedding_function=get_embedding_function()
-    )
+        print("Updating Chroma DB...")
+        db = Chroma(
+            persist_directory=Chroma_Path,
+            embedding_function=get_embedding_function()
+        )
 
-    db.add_documents(chunks)
-    print("Chroma DB updated with new documents.")
+        # Add documents in batches for better performance
+        batch_size = 100
+        for i in range(0, len(chunks), batch_size):
+            batch = chunks[i:i + batch_size]
+            db.add_documents(batch)
+            if (i + batch_size) % 500 == 0:
+                print(f"Added {min(i + batch_size, len(chunks))} / {len(chunks)} chunks...")
+        
+        print(f"Chroma DB updated with {len(chunks)} chunks from {len(docs)} documents.")
+    except Exception as e:
+        print(f"Error updating Chroma DB: {e}")
+        raise
 
 if __name__ == "__main__":
     update_chroma()

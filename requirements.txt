@@ -1,0 +1,12 @@
+fastapi
+langchain
+langchain_community
+langchain_chroma
+langchain_ollama
+pypdf
+pytest
+numpy
+<<<<<<< HEAD
+=======
+pandas
+>>>>>>> 4301fef (requirements.txt)

@@ -19,18 +19,11 @@ CHROMA_PATH = './chroma_db'
 # Initialize LLM once on startup (reused across all requests)
 llm_model = None
 
-# Run once on startup
-# if not os.path.exists(CHROMA_PATH):
-#     docs = load_and_split_documents()
-#     setup_chroma(docs)
-# db = load_chroma()
+Run once on startup
 if not os.path.exists(CHROMA_PATH):
-    if USE_MOCK_LLM:
-        print("MOCK_MODE: skipping Chroma setup")
-        db = None
-    else:
-        docs = load_and_split_documents()
-        setup_chroma(docs)
+    docs = load_and_split_documents()
+    setup_chroma(docs)
+db = load_chroma()
 
 
 # Store memory per session in a simple dict {session_id: memory_obj}
@@ -64,17 +57,6 @@ async def ask_question(request: QueryRequest):
     # Build prompt with context, question, and conversation history
     PROMPT_TEMPLATE = """
     You are a helpful assistant. Use the conversation history and the following excerpts to answer the question.
-
-    Conversation history:
-    {chat_history}
-
-    Excerpts:
-    {context}
-
-    Question:
-    {question}
-
-    Answer:
     """
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     prompt = prompt_template.format(
@@ -114,11 +96,5 @@ async def ingest():
     return {"message": "Chroma DB updated with new documents."}
 
 @app.get("/health")
-<<<<<<< HEAD
 def health_check():
     return {"status": "ok"}
-
-=======
-def health():
-    return("Status 200")
->>>>>>> 4301fef (requirements.txt)

@@ -22,17 +22,14 @@ class MockEmbeddings(Embeddings):
 
 # Cache the embedding function to avoid recreating it
 _embedding_function = None
+USE_MOCK_EMBEDDINGS = os.getenv("MOCK_MODE") == "true"
 
 def get_embedding_function():
-<<<<<<< HEAD
-    if os.getenv("MOCK_MODE") == "true":
-        return MockEmbeddings()
-    else:
-        embedding = OllamaEmbeddings(model="nomic-embed-text")
-        return embedding
-=======
     global _embedding_function
     if _embedding_function is None:
-        _embedding_function = OllamaEmbeddings(model="nomic-embed-text")
+        if USE_MOCK_EMBEDDINGS:
+            print("[EMBEDDINGS] Using MockEmbeddings for testing")
+            _embedding_function = MockEmbeddings()
+        else:
+            _embedding_function = OllamaEmbeddings(model="nomic-embed-text")
     return _embedding_function
->>>>>>> 4301fef (requirements.txt)

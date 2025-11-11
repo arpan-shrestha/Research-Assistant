@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from pydantic import BaseModel, validator
 from rag_pipeline import load_and_split_documents, setup_chroma, load_chroma, query_chroma, generate_answer
 from ingest import update_chroma  
-from langchain.memory import ConversationBufferMemory
-from langchain.prompts import ChatPromptTemplate
+from langchain_classic.memory import ConversationBufferMemory
+from langchain_classic.prompts import ChatPromptTemplate
 from langchain_ollama import OllamaLLM
 from get_embedding_function import get_embedding_function
 import os

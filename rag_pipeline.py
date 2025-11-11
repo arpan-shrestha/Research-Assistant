@@ -1,11 +1,11 @@
 # rag_pipeline.py
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.schema.document import Document
+from langchain_core.documents import Document
 from langchain_chroma import Chroma
 from get_embedding_function import get_embedding_function
 from langchain_ollama import OllamaLLM
-from langchain.prompts import ChatPromptTemplate
+from langchain_classic.prompts import ChatPromptTemplate
 import os
 
 CHROMA_PATH = './chroma_db'

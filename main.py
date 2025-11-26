@@ -6,6 +6,8 @@ from langchain_classic.memory import ConversationBufferMemory
 from langchain_classic.prompts import ChatPromptTemplate
 from langchain_ollama import OllamaLLM
 from get_embedding_function import get_embedding_function
+from query_router import determine_route
+from sql_pipeline import init_sql_pipeline, run_sql_query
 import os
 import asyncio
 import hashlib
@@ -13,7 +15,7 @@ from collections import OrderedDict
 from threading import Lock
 from datetime import datetime, timedelta
 
-USE_MOCK_LLM = os.getenv("MOCK_MODE") == "true"
+USE_MOCK_LLM = os.getenv("MOCK_MODE") == "false"
 
 app = FastAPI()
 
@@ -23,6 +25,7 @@ CHROMA_PATH = './chroma_db'
 llm_model = None
 db = None
 prompt_template = None
+sql_pipeline_state = None
 
 # Store memory per session in a simple dict {session_id: memory_obj}
 memory_store = {}
@@ -94,7 +97,7 @@ def cleanup_old_sessions():
 # Initialize everything on startup (async to avoid blocking)
 @app.on_event("startup")
 async def startup_event():
-    global llm_model, db, prompt_template
+    global llm_model, db, prompt_template, sql_pipeline_state
     
     print("[STARTUP] Initializing application...")
     
@@ -143,6 +146,14 @@ async def startup_event():
     """
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     print("[STARTUP] Prompt template cached")
+
+    # Initialize SQL pipeline (optional)
+    if not USE_MOCK_LLM:
+        sql_pipeline_state = await asyncio.to_thread(init_sql_pipeline, llm_model)
+        if sql_pipeline_state:
+            print("[STARTUP] SQL pipeline ready")
+        else:
+            print("[STARTUP] SQL pipeline not configured")
     
     print("[STARTUP] Application ready!")
 
@@ -160,7 +171,7 @@ class QueryRequest(BaseModel):
 
 @app.post("/ask")
 async def ask_question(request: QueryRequest):
-    global db, prompt_template
+    global db, prompt_template, sql_pipeline_state
     
     # Check if DB is initialized
     if db is None:
@@ -191,47 +202,83 @@ async def ask_question(request: QueryRequest):
     memory_vars = await asyncio.to_thread(memory.load_memory_variables, {})
     chat_history = memory_vars.get("chat_history", "")
 
-    # Query chroma for relevant docs (run in thread pool to avoid blocking)
-    try:
-        chunks = await asyncio.to_thread(query_chroma, db, request.question)
-        if not chunks:
-            raise ValueError("No relevant documents found in the database. Please ensure documents are ingested.")
-        context = "\n\n---\n\n".join([doc.page_content for doc in chunks])
-    except Exception as e:
-        print(f"[ASK] Error querying Chroma DB: {e}")
-        raise RuntimeError(f"Failed to query database: {str(e)}")
+    # Determine route (SQL vs RAG)
+    route = "rag"
+    if sql_pipeline_state and not USE_MOCK_LLM and llm_model is not None:
+        route = await asyncio.to_thread(
+            determine_route,
+            request.question,
+            llm_model,
+            sql_pipeline_state.schema_snapshot,
+            True,
+        )
 
-    # Build prompt using cached template
-    prompt = prompt_template.format(
-        chat_history=chat_history,
-        context=context,
-        question=request.question
-    )
-    
-    # Use async execution for LLM call to avoid blocking
-    try:
-        if USE_MOCK_LLM:
-            answer = "This is a mock response for testing"
+    metadata = {}
+
+    if route == "sql":
+        if not sql_pipeline_state:
+            route = "rag"
         else:
-            if llm_model is None:
-                raise RuntimeError("LLM model not initialized. Please check Ollama is running.")
-            # Run LLM invoke in thread pool to avoid blocking the event loop
-            answer = await asyncio.to_thread(llm_model.invoke, prompt)
-            if not answer or not answer.strip():
-                raise RuntimeError("LLM returned an empty response")
-    except Exception as e:
-        print(f"[ASK] Error calling LLM: {e}")
-        raise RuntimeError(f"Failed to generate answer: {str(e)}")
+            try:
+                sql_result = await asyncio.to_thread(run_sql_query, sql_pipeline_state.chain, request.question)
+                answer = sql_result["answer"]
+                metadata = sql_result.get("metadata", {})
+            except Exception as e:
+                print(f"[ASK] Error querying SQL DB: {e}. Falling back to RAG.")
+                route = "rag"
+    
+    chunks = []
+    context = ""
+    if route == "rag":
+        # Query chroma for relevant docs (run in thread pool to avoid blocking)
+        try:
+            chunks = await asyncio.to_thread(query_chroma, db, request.question)
+            if not chunks:
+                raise ValueError("No relevant documents found in the database. Please ensure documents are ingested.")
+            context = "\n\n---\n\n".join([doc.page_content for doc in chunks])
+        except Exception as e:
+            print(f"[ASK] Error querying Chroma DB: {e}")
+            raise RuntimeError(f"Failed to query database: {str(e)}")
+
+    if route == "rag":
+        # Build prompt using cached template
+        prompt = prompt_template.format(
+            chat_history=chat_history,
+            context=context,
+            question=request.question
+        )
+        
+        # Use async execution for LLM call to avoid blocking
+        try:
+            if USE_MOCK_LLM:
+                answer = "This is a mock response for testing"
+            else:
+                if llm_model is None:
+                    raise RuntimeError("LLM model not initialized. Please check Ollama is running.")
+                # Run LLM invoke in thread pool to avoid blocking the event loop
+                answer = await asyncio.to_thread(llm_model.invoke, prompt)
+                if not answer or not answer.strip():
+                    raise RuntimeError("LLM returned an empty response")
+        except Exception as e:
+            print(f"[ASK] Error calling LLM: {e}")
+            raise RuntimeError(f"Failed to generate answer: {str(e)}")
+        metadata = {}
 
     # Save this interaction to memory (run in thread pool)
     await asyncio.to_thread(memory.save_context, {"question": request.question}, {"answer": answer})
 
-    sources = [doc.metadata.get("source", "unknown") for doc in chunks]
+    sources = []
+    if route == "rag":
+        sources = [doc.metadata.get("source", "unknown") for doc in chunks]
+    else:
+        sources = ["sql_database"]
     
     response = {
         "answer": answer,
         "sources": sources,
-        "session_id": session_id 
+        "session_id": session_id,
+        "mode": route,
+        "metadata": metadata,
     }
     
     # Cache the response (with LRU eviction)

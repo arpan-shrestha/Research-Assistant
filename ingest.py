@@ -61,14 +61,14 @@ def split_docs(docs: list[Document]):
     return splitter.split_documents(docs)
 
 def update_chroma():
-    """Update Chroma DB with new documents - with error handling"""
+    """Update Chroma DB with new documents - safe ingestion"""
     try:
         print("Loading new documents...")
         docs = load_docs()
         if not docs:
             print("Warning: No documents found to ingest")
             return
-        
+
         print(f"Splitting {len(docs)} documents into chunks...")
         chunks = split_docs(docs)
         print(f"Created {len(chunks)} chunks")
@@ -79,17 +79,24 @@ def update_chroma():
             embedding_function=get_embedding_function()
         )
 
-        # Add documents in batches for better performance
-        batch_size = 100
+        batch_size = 50  # smaller batches reduce Ollama crashes
+        total_added = 0
+
         for i in range(0, len(chunks), batch_size):
             batch = chunks[i:i + batch_size]
-            db.add_documents(batch)
-            if (i + batch_size) % 500 == 0:
-                print(f"Added {min(i + batch_size, len(chunks))} / {len(chunks)} chunks...")
-        
-        print(f"Chroma DB updated with {len(chunks)} chunks from {len(docs)} documents.")
+            try:
+                db.add_documents(batch)
+                total_added += len(batch)
+                if total_added % 100 == 0 or i + batch_size >= len(chunks):
+                    print(f"Added {total_added} / {len(chunks)} chunks...")
+            except Exception as e:
+                print(f"[WARNING] Failed to embed batch {i}-{i+batch_size}: {e}")
+                continue  # skip batch if embedding fails
+
+        print(f"Chroma DB updated with {total_added} chunks from {len(docs)} documents.")
+
     except Exception as e:
-        print(f"Error updating Chroma DB: {e}")
+        print(f"[ERROR] Updating Chroma DB failed: {e}")
         raise
 
 if __name__ == "__main__":

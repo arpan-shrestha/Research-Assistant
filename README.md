@@ -8,6 +8,7 @@ A lightweight AI-powered research assistant that performs **retrieval-augmented 
 - Fast **semantic search** using locally generated embeddings
 - Natural-language Q&A using **Mistral 7B** (via Ollama)
 - Short-term **session memory** for follow-up questions
+- Automatic routing between **RAG** and **NL2SQL** for structured databases
 - REST API with `/ask` and `/ingest` endpoints via **FastAPI**
 ---
 ## Project Structure
@@ -45,6 +46,18 @@ ollama serve
 uvicorn main:app --reload
 ```
 ---
+### (Optional) 3b. Enable NL2SQL
+
+Set the `SQL_DATABASE_URL` environment variable so the assistant can translate questions into SQL when necessary.
+
+Examples:
+```bash
+export SQL_DATABASE_URL="sqlite:////absolute/path/to/my.db"
+# or
+export SQL_DATABASE_URL="postgresql+psycopg2://user:password@localhost:5432/mydb"
+```
+> The URL must be compatible with SQLAlchemy. Any required database drivers (e.g., `psycopg2-binary`, `pyodbc`) should also be installed in your environment.
+---
 ### 4. Ingest documents (PDFs)
 ```bash
 curl -X POST http://localhost:8000/ingest
@@ -61,7 +74,9 @@ curl -X POST http://localhost:8000/ask \
 ```json
 {
   "answer": "The captain who encountered Moby Dick was Ahab...",
-  "sources": ["sample_docs/Moby_Dick.pdf"]
+  "sources": ["sample_docs/Moby_Dick.pdf"],
+  "mode": "rag",
+  "metadata": {}
 }
 ```
 ---

@@ -22,6 +22,9 @@ def init_sql_pipeline(llm) -> Optional[SQLPipelineState]:
             llm=llm,
             db=sql_db,
             verbose=True,
+            agent_executor_kwargs={
+                "handle_parsing_errors": True,  # propagate SQL answers even if output format deviates
+            },
         )
 
         print("[SQL] SQL pipeline initialized successfully")
